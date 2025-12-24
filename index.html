@@ -1,0 +1,702 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Surprise: Happy Birthday E-Card (Interaktif)</title>
+  <style>
+    :root{
+      --bg:#071025;
+      --card:#0b1630;
+      --accent:#ff6b81;
+      --accent-2:#7c5cff;
+      --glass: rgba(255,255,255,0.04);
+      --muted: rgba(255,255,255,0.7);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;font-family:Inter,ui-sans-serif,system-ui,Roboto,"Helvetica Neue",Arial}
+    body{
+      background:
+        radial-gradient(600px 300px at 10% 10%, rgba(124,92,255,0.06), transparent 10%),
+        radial-gradient(600px 300px at 90% 90%, rgba(255,107,129,0.04), transparent 10%),
+        linear-gradient(180deg,#041027 0%, #071025 100%);
+      color:#eef2ff;display:flex;align-items:center;justify-content:center;padding:20px;
+    }
+
+    .wrap{width:100%;max-width:1100px}
+    .grid{display:grid;grid-template-columns:420px 1fr;gap:20px}
+    .panel{
+      background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border-radius:14px;padding:18px;border:1px solid var(--glass);box-shadow:0 8px 30px rgba(2,6,23,0.6);
+    }
+
+    /* Left: controls */
+    .panel.left{height:720px;display:flex;flex-direction:column;gap:12px}
+    .form-row{display:flex;gap:8px;align-items:center}
+    label{font-size:13px;color:var(--muted);min-width:90px}
+    input[type="text"], textarea{background:transparent;border:1px solid rgba(255,255,255,0.04);Color:inherit;padding:10px;border-radius:8px;flex:1}
+    textarea{min-height:86px;resize:vertical}
+    .small{font-size:12px;color:rgba(255,255,255,0.6)}
+    .btn{background:linear-gradient(90deg,var(--accent),var(--accent-2));color:white;padding:8px 12px;border-radius:10px;border:0;cursor:pointer;font-weight:600}
+    .btn.ghost{background:transparent;border:1px solid rgba(255,255,255,0.06)}
+    .muted{color:rgba(255,255,255,0.6);font-size:13px}
+
+    /* Right: card preview */
+    .preview{position:relative;height:720px;overflow:hidden;display:flex;flex-direction:column}
+    .card{
+      flex:1;background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.005));border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:12px;position:relative;
+      border:1px solid rgba(255,255,255,0.03)
+    }
+    .top{
+      display:flex;gap:12px;align-items:center;
+    }
+    .avatar{width:120px;height:120px;border-radius:12px;overflow:hidden;border:3px solid rgba(255,255,255,0.03);flex:0 0 120px}
+    .avatar img{width:100%;height:100%;object-fit:cover;display:block}
+    .title{flex:1}
+    .title h1{margin:0;font-size:26px}
+    .title p{margin:6px 0 0;color:var(--muted)}
+    .slideshow{height:220px;border-radius:10px;overflow:hidden;border:1px solid rgba(255,255,255,0.03);position:relative;background:#071229}
+    .slide{width:100%;height:100%;position:absolute;inset:0;display:flex;align-items:center;justify-content:center;transition:opacity .6s,transform .6s;opacity:0;transform:scale(1.03)}
+    .slide.active{opacity:1;transform:scale(1)}
+    .slide img{width:100%;height:100%;object-fit:cover;display:block}
+    .controls-bottom{display:flex;gap:8px;align-items:center;justify-content:space-between;margin-top:6px}
+    .small-btn{background:transparent;border:1px solid rgba(255,255,255,0.06);padding:6px 8px;border-radius:8px;color:inherit;cursor:pointer}
+
+    /* interactive blocks */
+    .blocks{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px}
+    .block{background:linear-gradient(180deg, rgba(255,255,255,0.012), rgba(255,255,255,0.006));padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.03)}
+    .block h3{margin:0 0 8px;font-size:15px}
+    .quiz-q{margin-bottom:8px}
+    .option{display:block;background:transparent;border:1px solid rgba(255,255,255,0.04);padding:8px;border-radius:8px;margin-bottom:8px;cursor:pointer}
+    .option.correct{border-color:rgba(110,231,183,0.9);background:rgba(110,231,183,0.06)}
+    .option.wrong{border-color:rgba(255,107,129,0.9);background:rgba(255,107,129,0.04)}
+
+    /* hearts meter */
+    .hearts-row{display:flex;gap:6px;align-items:center}
+    .heart-btn{font-size:20px;cursor:pointer;opacity:.9;transition:transform .15s}
+
+    /* overlay surprise */
+    .overlay{
+      position:absolute;inset:0;background:linear-gradient(180deg, rgba(2,6,23,0.55), rgba(2,6,23,0.7));
+      display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .35s;
+    }
+    .overlay.show{opacity:1;pointer-events:auto}
+    .modal{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));padding:20px;border-radius:12px;border:1px solid rgba(255,255,255,0.04);text-align:center;max-width:720px}
+    .modal h2{margin:0 0 8px}
+    .modal p{margin:0 0 12px}
+
+    /* keypad */
+    .pin-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-width:240px;margin:0 auto}
+    .pin-key{background:linear-gradient(90deg,#0f1f3a,#0b1630);padding:12px;border-radius:8px;border:1px solid rgba(255,255,255,0.03);cursor:pointer}
+
+    /* small responsive */
+    @media (max-width:980px){
+      .grid{grid-template-columns:1fr;align-items:start}
+      .panel.left{height:auto}
+      .preview{height:auto}
+      .card{height:auto}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div>
+        <strong style="font-size:18px">E-Card Interaktif — Ulang Tahun</strong>
+        <div class="small muted">Buat kejutan yang menyenangkan dan interaktif untuk pacar kamu</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn" id="openPreviewBtn">Buka Kejutan</button>
+        <button class="btn ghost" id="resetBtn">Reset Interaksi</button>
+      </div>
+    </div>
+
+    <div class="grid">
+      <!-- Left: Controls -->
+      <div class="panel left">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <strong>Personalisasi</strong>
+          <div class="small muted">Perubahan langsung terlihat di preview</div>
+        </div>
+
+        <div style="margin-top:8px">
+          <div class="form-row"><label>Nama</label><input id="inpName" type="text" value="Sayang"></div>
+          <div class="form-row"><label>Dari</label><input id="inpFrom" type="text" value="Nama Kamu"></div>
+          <div style="margin-top:6px"><label style="display:block;margin-bottom:6px">Pesan Utama</label><textarea id="inpMsg">Semoga hari ini penuh cinta, tawa, dan kejutan indah. Aku sayang kamu.</textarea></div>
+          <div style="margin-top:6px" class="form-row"><label>Foto (URL)</label><input id="inpPhoto" type="text" value="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=placeholder"></div>
+          <div style="margin-top:6px" class="form-row"><label>Musik (MP3)</label><input id="inpMusic" type="text" placeholder="https://.../lagu.mp3"></div>
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <button class="btn" id="applyBtn">Terapkan</button>
+            <button class="btn ghost" id="addSlideBtn">Tambah Slide Foto</button>
+          </div>
+        </div>
+
+        <hr style="border:none;border-top:1px solid rgba(255,255,255,0.03);margin:8px 0">
+
+        <div><strong>Pengaturan Kejutan</strong></div>
+        <div class="small muted" style="margin-bottom:8px">Atur kata sandi PIN (opsional) untuk catatan pribadi</div>
+        <div class="form-row"><label>PIN</label><input id="inpPin" type="text" value="1995"></div>
+
+        <div style="margin-top:8px">
+          <strong>Quiz Editor</strong>
+          <div class="small muted">Pertanyaan bisa diganti — minimal 1 jawaban benar per soal</div>
+          <div style="margin-top:8px">
+            <textarea id="quizJson" style="width:100%;min-height:120px;background:transparent;border:1px solid rgba(255,255,255,0.04);padding:8px;border-radius:8px">
+[
+  {"q":"Di mana kita pertama kali bertemu?","opts":["Kafe","Kampus","Taman"],"a":0},
+  {"q":"Makanan favorit dia?","opts":["Sushi","Nasi Goreng","Pizza"],"a":1},
+  {"q":"Warna yang dia suka?","opts":["Biru","Merah","Hijau"],"a":0}
+]
+            </textarea>
+            <div style="display:flex;gap:8px;margin-top:8px">
+              <button class="btn" id="loadQuizBtn">Muat Quiz</button>
+              <button class="btn ghost" id="clearProgressBtn">Kosongkan Progress</button>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top:auto">
+          <div class="small muted">Petunjuk cepat:</div>
+          <ul style="padding-left:18px;margin:6px 0 0" class="small muted">
+            <li>Gunakan tombol "Buka Kejutan" untuk memicu overlay bila syarat terpenuhi.</li>
+            <li>Quiz + Love‑meter + PIN semua bisa membuka pesan rahasia (aturan: lihat preview).</li>
+            <li>Simpan file dan bagikan (atau gunakan GitHub Pages/Netlify jika ingin online).</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Right: Preview -->
+      <div class="panel preview">
+        <div class="card" id="card">
+          <div class="top">
+            <div class="avatar"><img id="avatarImg" src=""></div>
+            <div class="title">
+              <h1 id="titleText">Selamat Ulang Tahun, Sayang 🎉</h1>
+              <p id="subText" class="small muted">Kejutan interaktif untukmu</p>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">
+              <div class="muted small">Dari</div>
+              <div style="font-weight:700" id="fromText">Nama Kamu</div>
+            </div>
+          </div>
+
+          <div class="slideshow" id="slideshow">
+            <!-- slides injected -->
+          </div>
+          <div class="controls-bottom">
+            <div>
+              <button class="small-btn" id="prevSlide">◀ Prev</button>
+              <button class="small-btn" id="playPauseSlide">▶ Play</button>
+              <button class="small-btn" id="nextSlide">Next ▶</button>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <button class="small-btn" id="playMusicBtn">Play Musik</button>
+              <button class="small-btn" id="surpriseHintsBtn">Petunjuk Kejutan</button>
+            </div>
+          </div>
+
+          <div class="blocks">
+            <div class="block" id="blockQuiz">
+              <h3>Mini Quiz</h3>
+              <div id="quizArea"></div>
+              <div style="margin-top:8px" class="muted small">Jawab untuk membuka bagian pesan rahasia.</div>
+            </div>
+
+            <div class="block" id="blockLove">
+              <h3>Love Meter</h3>
+              <div class="hearts-row" id="heartsRow">
+                <!-- hearts -->
+              </div>
+              <div style="margin-top:8px" class="muted small">Klik hati sampai penuh untuk memicu kejutan.</div>
+            </div>
+
+            <div class="block" id="blockPin" style="grid-column:1/3">
+              <h3>Catatan Terproteksi (PIN)</h3>
+              <div style="text-align:center;margin-bottom:8px">
+                <div id="pinDisplay" style="font-size:22px;letter-spacing:6px">----</div>
+              </div>
+              <div class="pin-pad" id="pinPad">
+                <!-- keys -->
+              </div>
+              <div style="display:flex;justify-content:center;gap:8px;margin-top:8px">
+                <button class="btn ghost" id="pinClearBtn">Reset PIN Input</button>
+                <button class="btn" id="pinOpenBtn">Buka Catatan</button>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">
+            <div class="muted small">Pesan singkat:</div>
+            <div class="muted small">Klik "Buka Kejutan" atau penuhi syarat.</div>
+          </div>
+
+          <div style="height:2px"></div>
+        </div>
+
+        <!-- overlay modal for secret message -->
+        <div class="overlay" id="overlay">
+          <div class="modal" id="modalContent">
+            <h2 id="modalTitle">Surprise!</h2>
+            <p id="modalMessage">Ini pesan rahasiamu. Selamat ulang tahun — aku sayang kamu!</p>
+            <img id="modalImg" src="" alt="" style="width:160px;height:160px;border-radius:12px;object-fit:cover;margin-top:12px;border:3px solid rgba(255,255,255,0.04)">
+            <div style="margin-top:12px;display:flex;gap:8px;justify-content:center">
+              <button class="btn" id="closeModalBtn">Tutup</button>
+              <button class="btn ghost" id="pauseMusicBtn">Stop Musik</button>
+            </div>
+          </div>
+        </div>
+
+        <audio id="bgAudio" loop></audio>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* =========================
+       PERSONALISASI (ubah nilai default jika mau)
+       ========================= */
+    const DEFAULT = {
+      name: "Sayang",
+      from: "Nama Kamu",
+      message: "Semoga hari ini penuh cinta, tawa, dan kejutan indah. Aku sayang kamu.",
+      photo: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=placeholder",
+      music: "", // masukkan link mp3 publik jika mau
+      pin: "1995",
+      slides: [
+        "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=placeholder",
+        "https://images.unsplash.com/photo-1503264116251-35a269479413?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=placeholder",
+        "https://images.unsplash.com/photo-1517841905240-472988babdf9?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=placeholder"
+      ],
+      quiz: [
+        {q:"Di mana kita pertama kali bertemu?","opts":["Kafe","Kampus","Taman"],a:0},
+        {q:"Makanan favorit dia?","opts":["Sushi","Nasi Goreng","Pizza"],a:1},
+        {q:"Warna yang dia suka?","opts":["Biru","Merah","Hijau"],a:0}
+      ]
+    };
+
+    // UI elements
+    const inpName = document.getElementById('inpName');
+    const inpFrom = document.getElementById('inpFrom');
+    const inpMsg = document.getElementById('inpMsg');
+    const inpPhoto = document.getElementById('inpPhoto');
+    const inpMusic = document.getElementById('inpMusic');
+    const inpPin = document.getElementById('inpPin');
+    const applyBtn = document.getElementById('applyBtn');
+    const addSlideBtn = document.getElementById('addSlideBtn');
+    const avatarImg = document.getElementById('avatarImg');
+    const titleText = document.getElementById('titleText');
+    const fromText = document.getElementById('fromText');
+    const modal = document.getElementById('overlay');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalMessage = document.getElementById('modalMessage');
+    const modalImg = document.getElementById('modalImg');
+    const bgAudio = document.getElementById('bgAudio');
+    const playMusicBtn = document.getElementById('playMusicBtn');
+    const playPauseSlide = document.getElementById('playPauseSlide');
+    const prevSlide = document.getElementById('prevSlide');
+    const nextSlide = document.getElementById('nextSlide');
+    const slideshow = document.getElementById('slideshow');
+    const quizJson = document.getElementById('quizJson');
+    const loadQuizBtn = document.getElementById('loadQuizBtn');
+    const quizArea = document.getElementById('quizArea');
+    const heartsRow = document.getElementById('heartsRow');
+    const pinDisplay = document.getElementById('pinDisplay');
+    const pinPad = document.getElementById('pinPad');
+    const pinClearBtn = document.getElementById('pinClearBtn');
+    const pinOpenBtn = document.getElementById('pinOpenBtn');
+    const openPreviewBtn = document.getElementById('openPreviewBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const loadQuizDefBtn = document.getElementById('loadQuizBtn');
+    const clearProgressBtn = document.getElementById('clearProgressBtn');
+    const surpriseHintsBtn = document.getElementById('surpriseHintsBtn');
+    const addSlide = document.getElementById('addSlideBtn');
+
+    // State
+    let state = {
+      name: DEFAULT.name,
+      from: DEFAULT.from,
+      message: DEFAULT.message,
+      photo: DEFAULT.photo,
+      music: DEFAULT.music,
+      slides: [...DEFAULT.slides],
+      pin: DEFAULT.pin,
+      quiz: [...DEFAULT.quiz],
+      slideIndex: 0,
+      slidePlaying: false,
+      hearts: 0,
+      pinInput: "",
+      quizProgress: [] // boolean per question
+    };
+
+    // Init UI values
+    inpName.value = state.name;
+    inpFrom.value = state.from;
+    inpMsg.value = state.message;
+    inpPhoto.value = state.photo;
+    inpMusic.value = state.music;
+    inpPin.value = state.pin;
+    quizJson.value = JSON.stringify(state.quiz, null, 2);
+
+    function renderHeader(){
+      titleText.textContent = `Selamat Ulang Tahun, ${state.name} 🎉`;
+      fromText.textContent = state.from;
+      avatarImg.src = state.photo;
+      modalImg.src = state.photo;
+      modalMessage.textContent = state.message;
+      document.getElementById('subText').textContent = state.message.slice(0,60) + (state.message.length>60? "…":"");
+      bgAudio.src = state.music || "";
+      pinDisplay.textContent = state.pinInput.padEnd(4, '-');
+    }
+
+    /* =========== Slide show =========== */
+    function renderSlides(){
+      slideshow.innerHTML = "";
+      state.slides.forEach((s,i)=>{
+        const el = document.createElement('div');
+        el.className = 'slide' + (i===state.slideIndex ? ' active' : '');
+        const img = document.createElement('img');
+        img.src = s;
+        el.appendChild(img);
+        slideshow.appendChild(el);
+      });
+    }
+    function next(){
+      state.slideIndex = (state.slideIndex + 1) % state.slides.length;
+      renderSlides();
+    }
+    function prev(){
+      state.slideIndex = (state.slideIndex - 1 + state.slides.length) % state.slides.length;
+      renderSlides();
+    }
+    let slideTimer = null;
+    function toggleSlidePlay(){
+      state.slidePlaying = !state.slidePlaying;
+      playPauseSlide.textContent = state.slidePlaying ? "⏸ Pause" : "▶ Play";
+      if(state.slidePlaying){
+        slideTimer = setInterval(next, 3000);
+      }else{
+        clearInterval(slideTimer);
+      }
+    }
+
+    /* =========== Quiz =========== */
+    function renderQuiz(){
+      quizArea.innerHTML = "";
+      state.quiz.forEach((q, qi)=>{
+        const wrapper = document.createElement('div');
+        wrapper.className = 'quiz-q';
+        const title = document.createElement('div');
+        title.textContent = (qi+1) + ". " + q.q;
+        title.style.fontWeight = '600';
+        title.style.marginBottom = '8px';
+        wrapper.appendChild(title);
+
+        q.opts.forEach((opt, oi)=>{
+          const b = document.createElement('button');
+          b.className = 'option';
+          b.textContent = opt;
+          b.addEventListener('click', ()=>{
+            const correct = (oi === q.a);
+            // mark UI
+            Array.from(wrapper.querySelectorAll('.option')).forEach(each => each.classList.remove('correct','wrong'));
+            if(correct) b.classList.add('correct'); else b.classList.add('wrong');
+            state.quizProgress[qi] = correct;
+            checkQuizCompletion();
+          });
+          wrapper.appendChild(b);
+        });
+        quizArea.appendChild(wrapper);
+      });
+      // init progress
+      state.quizProgress = state.quiz.map(()=>false);
+    }
+
+    function checkQuizCompletion(){
+      const correctCount = state.quizProgress.filter(Boolean).length;
+      // rule: minimal 2 correct (or all if quiz length <=2)
+      const needed = Math.min(state.quiz.length, 2);
+      if(correctCount >= needed){
+        // reveal secret (but do not auto open overlay; show small hint)
+        showHint("Quiz lengkap! Kamu dapat membuka pesan rahasia.");
+      }
+    }
+
+    /* =========== Hearts (love meter) =========== */
+    function renderHearts(){
+      heartsRow.innerHTML = "";
+      for(let i=0;i<6;i++){
+        const h = document.createElement('div');
+        h.innerHTML = '❤';
+        h.className = 'heart-btn';
+        h.style.color = (i < state.hearts) ? 'var(--accent)' : 'rgba(255,255,255,0.18)';
+        h.addEventListener('click', ()=> {
+          state.hearts = Math.min(6, state.hearts + 1);
+          renderHearts();
+          if(state.hearts >= 6){
+            showHint("Love meter penuh! Kamu dapat membuka kejutan.");
+          }
+        });
+        heartsRow.appendChild(h);
+      }
+    }
+
+    /* =========== PIN pad =========== */
+    function renderPinPad(){
+      pinPad.innerHTML = "";
+      const keys = ['1','2','3','4','5','6','7','8','9','0'];
+      keys.forEach(k=>{
+        const btn = document.createElement('div');
+        btn.className = 'pin-key';
+        btn.textContent = k;
+        btn.addEventListener('click', ()=>{
+          if(state.pinInput.length >= 4) return;
+          state.pinInput += k;
+          pinDisplay.textContent = state.pinInput.padEnd(4, '-');
+        });
+        pinPad.appendChild(btn);
+      });
+    }
+    pinClearBtn.addEventListener('click', ()=>{
+      state.pinInput = "";
+      pinDisplay.textContent = pinDisplay.textContent = state.pinInput.padEnd(4, '-');
+    });
+    pinOpenBtn.addEventListener('click', ()=>{
+      if(state.pinInput === state.pin){
+        // open secret
+        openModal("Catatan Terbuka", state.message);
+        state.pinInput = "";
+        pinDisplay.textContent = state.pinInput.padEnd(4, '-');
+      }else{
+        showHint("PIN salah — coba lagi.");
+        state.pinInput = "";
+        pinDisplay.textContent = state.pinInput.padEnd(4, '-');
+      }
+    });
+
+    /* =========== Modal / Surprise =========== */
+    function openModal(title, message){
+      modalTitle.textContent = title || "Surprise!";
+      modalMessage.textContent = message || state.message;
+      modalImg.src = state.photo;
+      modal.classList.add('show');
+      if(bgAudio.src) {
+        bgAudio.currentTime = 0;
+        bgAudio.play().catch(()=>{/* autoplay blocked */});
+      }
+      // confetti simple
+      spawnConfetti(120);
+    }
+    document.getElementById('closeModalBtn').addEventListener('click', ()=> {
+      modal.classList.remove('show');
+      try{ bgAudio.pause(); }catch(e){}
+    });
+    document.getElementById('pauseMusicBtn').addEventListener('click', ()=> {
+      try{ bgAudio.pause(); }catch(e){}
+    });
+
+    /* =========== Confetti (simple) =========== */
+    function spawnConfetti(n=80){
+      const container = document.getElementById('card');
+      for(let i=0;i<n;i++){
+        const el = document.createElement('div');
+        el.style.position = 'absolute';
+        el.style.width = (6 + Math.random()*10) + 'px';
+        el.style.height = (8 + Math.random()*12) + 'px';
+        const cols = ['#ff6b81','#ffb86b','#f9f871','#7c5cff','#6ee7b7','#8bd3ff'];
+        el.style.background = cols[Math.floor(Math.random()*cols.length)];
+        el.style.left = (Math.random()*80 + 10) + '%';
+        el.style.top = (Math.random()*20 + 10) + '%';
+        el.style.opacity = '1';
+        el.style.borderRadius = '2px';
+        el.style.transform = 'translateY(0) rotate(' + (Math.random()*360) + 'deg)';
+        el.style.pointerEvents = 'none';
+        container.appendChild(el);
+        const dur = 1800 + Math.random()*1400;
+        const endY = 700 + Math.random()*200;
+        const start = performance.now();
+        (function animate(now){
+          const t = Math.min(1, (now - start)/dur);
+          el.style.transform = `translateY(${t*endY}px) rotate(${t*720}deg)`;
+          el.style.opacity = String(1 - t);
+          if(t < 1) requestAnimationFrame(animate);
+          else el.remove();
+        })(performance.now());
+      }
+    }
+
+    /* =========== Helpers & Events =========== */
+    applyBtn.addEventListener('click', ()=>{
+      state.name = inpName.value || DEFAULT.name;
+      state.from = inpFrom.value || DEFAULT.from;
+      state.message = inpMsg.value || DEFAULT.message;
+      state.photo = inpPhoto.value || DEFAULT.photo;
+      state.music = inpMusic.value || DEFAULT.music;
+      state.pin = (inpPin.value && inpPin.value.trim()) ? inpPin.value.trim() : DEFAULT.pin;
+      renderHeader();
+      renderSlides();
+      renderQuiz();
+      renderHearts();
+      renderPinPad();
+      showHint("Perubahan diterapkan.");
+    });
+
+    addSlideBtn.addEventListener('click', ()=>{
+      const url = prompt("Masukkan URL foto untuk slide baru:");
+      if(url) {
+        state.slides.push(url);
+        renderSlides();
+        showHint("Slide ditambahkan.");
+      }
+    });
+
+    loadQuizBtn.addEventListener('click', ()=>{
+      try{
+        const parsed = JSON.parse(quizJson.value);
+        // minimal validation
+        if(!Array.isArray(parsed) || parsed.length === 0) throw new Error("Format quiz salah");
+        state.quiz = parsed;
+        renderQuiz();
+        showHint("Quiz dimuat.");
+      }catch(e){
+        alert("Gagal memuat quiz: " + e.message);
+      }
+    });
+
+    clearProgressBtn.addEventListener('click', ()=>{
+      state.quizProgress = state.quiz.map(()=>false);
+      state.hearts = 0;
+      state.pinInput = "";
+      pinDisplay.textContent = state.pinInput.padEnd(4, '-');
+      renderHearts();
+      renderQuiz();
+      showHint("Progress direset.");
+    });
+
+    playMusicBtn.addEventListener('click', ()=>{
+      if(!bgAudio.src) { alert("Tidak ada musik diatur. Masukkan URL MP3 di Personalization."); return; }
+      if(bgAudio.paused){ bgAudio.play().catch(()=>alert('Autoplay diblokir; klik play pada overlay jika perlu')); playMusicBtn.textContent = "⏸ Stop"; }
+      else { bgAudio.pause(); playMusicBtn.textContent = "Play Musik"; }
+    });
+
+    prevSlide.addEventListener('click', prev);
+    nextSlide.addEventListener('click', next);
+    playPauseSlide.addEventListener('click', toggleSlidePlay);
+
+    surpriseHintsBtn.addEventListener('click', ()=>{
+      const hints = [
+        "Tip: Jawab quiz minimal 2 benar untuk membuka pesan.",
+        "Tip: Isi love meter (klik hati sampai penuh).",
+        "Tip: Kamu bisa membuka catatan dengan PIN yang diset di kiri."
+      ];
+      showHint(hints[Math.floor(Math.random()*hints.length)]);
+    });
+
+    openPreviewBtn.addEventListener('click', ()=>{
+      // rule: open if any of conditions met:
+      // - quiz correctCount >= needed (2)
+      // - hearts full (6)
+      // - pin was correctly entered (handled separately)
+      const correctCount = state.quizProgress.filter(Boolean).length;
+      const needed = Math.min(state.quiz.length, 2);
+      if(correctCount >= needed || state.hearts >= 6){
+        openModal("Surprise! 🎂", state.message);
+      }else{
+        showHint("Belum cukup syarat: jawab quiz minimal " + needed + " benar atau isi love meter.");
+      }
+    });
+
+    resetBtn.addEventListener('click', ()=>{
+      if(!confirm('Reset semua ke default?')) return;
+      state = {
+        name: DEFAULT.name,
+        from: DEFAULT.from,
+        message: DEFAULT.message,
+        photo: DEFAULT.photo,
+        music: DEFAULT.music,
+        slides: [...DEFAULT.slides],
+        pin: DEFAULT.pin,
+        quiz: [...DEFAULT.quiz],
+        slideIndex: 0,
+        slidePlaying: false,
+        hearts: 0,
+        pinInput: "",
+        quizProgress: []
+      };
+      inpName.value = state.name;
+      inpFrom.value = state.from;
+      inpMsg.value = state.message;
+      inpPhoto.value = state.photo;
+      inpMusic.value = state.music;
+      inpPin.value = state.pin;
+      quizJson.value = JSON.stringify(state.quiz, null, 2);
+      renderAll();
+      showHint("Sudah direset ke default.");
+    });
+
+    function showHint(text){
+      // small transient hint in top right of card
+      let el = document.createElement('div');
+      el.textContent = text;
+      el.style.position = 'absolute';
+      el.style.right = '16px';
+      el.style.top = '12px';
+      el.style.background = 'linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01))';
+      el.style.border = '1px solid rgba(255,255,255,0.04)';
+      el.style.padding = '8px 10px';
+      el.style.borderRadius = '8px';
+      el.style.fontSize = '13px';
+      el.style.opacity = '0';
+      el.style.transition = 'opacity .25s, transform .25s';
+      document.getElementById('card').appendChild(el);
+      requestAnimationFrame(()=>{ el.style.opacity = '1'; el.style.transform='translateY(-4px)'; });
+      setTimeout(()=>{ el.style.opacity='0'; el.style.transform='translateY(0)'; setTimeout(()=>el.remove(),300); }, 2200);
+    }
+
+    /* Render everything initially */
+    function renderAll(){
+      renderHeader();
+      renderSlides();
+      renderQuiz();
+      renderHearts();
+      renderPinPad();
+    }
+    renderAll();
+
+    // auto-apply defaults on first load
+    // (user can change via panel)
+    // End.
+
+    // small accessibility: Enter key on name applies
+    inpName.addEventListener('keydown', e=>{ if(e.key === 'Enter') applyBtn.click(); });
+
+    // allow keyboard secret: type "LOVE" to auto fill hearts (easter egg)
+    let keybuf = "";
+    document.addEventListener('keydown', e=>{
+      keybuf += e.key;
+      if(keybuf.length > 10) keybuf = keybuf.slice(-10);
+      if(keybuf.toLowerCase().includes('love')){
+        state.hearts = 6;
+        renderHearts();
+        showHint("Easter egg: Love penuh!");
+      }
+    });
+
+    // small safety: if music URL added, set audio
+    inpMusic.addEventListener('change', ()=>{ bgAudio.src = inpMusic.value; });
+
+    // allow clicking an image slide to open modal
+    slideshow.addEventListener('click', ()=>{
+      openModal("Foto Spesial", state.message);
+    });
+
+    // load quiz from default area on first run
+    loadQuizDefBtn.click?.();
+
+    // Prevent accidental drag of images
+    document.querySelectorAll('img').forEach(i=>{
+      i.addEventListener('dragstart', e=>e.preventDefault());
+    });
+
+  </script>
+</body>
+</html>
